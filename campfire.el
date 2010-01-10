@@ -52,6 +52,7 @@ Called with the campfire room bufer, so variables such as campfire-room-name are
 
 (defvar campfire-transcript-updated nil "Hook called whenever the transcript is updated")
 
+(defvar campfire-user-cell-width 20 "the width of the user cell")
 (defgroup campfire-faces nil "Faces for campfire-mode"
   :group 'campfire-faces)
 
@@ -364,7 +365,10 @@ Connection: close\n\n"
 
 (defun campfire-speak-reponse-received (response)
   (setq campfire-my-user-id (cdr (assoc 'user_id (cdr (assoc 'message response)))))
-  (save-excursion (goto-char (overlay-end campfire-transcript-overlay)) (insert "...\n")))
+  (save-excursion
+    (goto-char (overlay-end campfire-transcript-overlay))
+    (insert "...\n")
+    (run-hook-with-args 'campfire-transcript-updated)))
 
 (defun campfire-find-user-by-id (id &rest no-reload-users-on-miss)
   (or
@@ -401,8 +405,6 @@ Connection: close\n\n"
 
 ;; (campfire-extract-hour-minute-from-timestamp "2009/01/01 04:45:00")
 
-
-(defvar campfire-user-cell-width 20 "the width of the user cell")
 
 (defun campfire-insert-user-cell (text &optional face)
   "displays text for the user cell"
