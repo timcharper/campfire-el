@@ -132,27 +132,45 @@
 (defun campfire-room-names (campfire-rooms)
   (map 'list (lambda (room-details) (cdr (assoc 'name room-details))) campfire-rooms))
 
-(defun campfire-join ()
+
+(defun campfire-completing-read (prompt choices  &optional predicate require-match
+                                        initial-input hist def)
+  "use ido if available"
+  (if (functionp 'ido-completing-read)
+      (ido-completing-read prompt choices predicate require-match
+                         initial-input hist def)
+    (completing-read prompt collection predicate require-match initial-input hist def inherit-input-method)))
+
+(defun campfire-select-domain ()
+  (let ((domain-name (campfire-completing-read
+                      "Domain: "
+                      (map 'list (lambda (domain) (alist-value 'domain domain)) campfire-domains)
+                      nil
+                      t)))
+    (or (find-if (lambda (domain) (message (alist-value 'domain domain)) (equal (alist-value 'domain domain) domain-name)) campfire-domains)
+        (error 'no-such-domain))))
+
+(defun campfire ()
+  "connect to campfire"
   (interactive)
-  (setq campfire-join
-        (read-from-minibuffer "Campfire domain: " campfire-domain))
-  (setq campfire-token
-        (read-from-minibuffer "Campfire token: " campfire-token))
+  (let ((domain (campfire-select-domain)))
+    (setq campfire-domain (alist-value 'domain domain)
+          campfire-ssl (alist-value 'ssl domain)
+          campfire-token (alist-value 'token domain)
+          campfire-rooms (fetch-campfire-rooms)
+          campfire-room-name (campfire-completing-read "Campfire room: " (campfire-room-names campfire-rooms) nil t)
+          campfire-room-id (campfire-room-id-for-name campfire-rooms campfire-room-name))
 
-  (let ((campfire-rooms (fetch-campfire-rooms)))
-    (setq
-     campfire-room-name (completing-read "Campfire room: " (campfire-room-names campfire-rooms) nil t)
-     campfire-room-id (campfire-room-id-for-name campfire-rooms campfire-room-name)))
-  (campfire-fetch-my-user-id)
-  (campfire-start))
+    (campfire-join)))
 
-(defun campfire-start ()
+(defun campfire-join ()
   (let ((buf (get-buffer-create (concat "*Campfire: " campfire-room-name "*"))))
     (switch-to-buffer buf)
     (kill-all-local-variables)
-    (goto-char (point-min))
+    (campfire-fetch-my-user-id)
     (campfire-room-mode)
-    (campfire-open-stream)))
+    (campfire-open-stream)
+    (campfire-display-transcript)))
 
 ;; (campfire-start)
 
