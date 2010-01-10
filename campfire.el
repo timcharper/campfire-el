@@ -53,6 +53,7 @@ Called with the campfire room bufer, so variables such as campfire-room-name are
 (defvar campfire-transcript-updated nil "Hook called whenever the transcript is updated")
 
 (defvar campfire-user-cell-width 20 "the width of the user cell")
+(defvar campfire-last-heartbeat nil "last time we saw a message (event be it the scondly ping) from campfire.")
 (defgroup campfire-faces nil "Faces for campfire-mode"
   :group 'campfire-faces)
 
@@ -198,6 +199,7 @@ Called with the campfire room bufer, so variables such as campfire-room-name are
   (make-local-variable 'campfire-transcript-overlay)
   (make-local-variable 'campfire-message-overlay)
   (make-local-variable 'campfire-banner-overlay)
+  (make-local-variable 'campfire-last-heartbeat)
 
   (make-local-variable 'campfire-streaming-buffer)
   (make-local-variable 'campfire-stream)
@@ -298,7 +300,15 @@ Connection: close\n\n"
                                                  (campfire-basic-authorization-string)))
     (set-process-filter campfire-stream 'campfire-stream-data-received)
     (set-process-sentinel campfire-stream 'campfire-stream-process-sentinal)
-    (campfire-system-message "Connected")))
+    (campfire-system-message "Connected")
+    (campfire-check-heartbeat (current-buffer))))
+
+(defun campfire-check-heartbeat (buffer)
+  (if (buffer-live-p buffer)
+      (with-current-buffer buffer
+        (if (> (- (time-to-seconds (current-time)) (time-to-seconds campfire-last-heartbeat)) 20)
+            (message (format "Connection lost in %s!" campfire-room-name))
+          (run-at-time "20 seconds" nil `(lambda () (campfire-check-heartbeat ,(current-buffer))))))))
 
 (defun campfire-stream-terminate ()
   "run from stream buffer, terminate and clean up"
@@ -348,6 +358,7 @@ Connection: close\n\n"
         (let ((message-size (string-to-number (filter-buffer-substring (point-min) (- (point) 1)) 16)))
           (if (> (point-max) (+ (point) message-size))
               (progn
+                (with-current-buffer room-buffer (setq campfire-last-heartbeat (current-time)))
                 (filter-buffer-substring (point-min) (+ (point) 1) t)
                 (while (looking-at "{")
                   (let* ((original-point (point))
@@ -510,11 +521,11 @@ Connection: close\n\n"
              (campfire-insert-user-cell "" 'campfire-user-face)
              (campfire-insert-message-cell (format "%s" message) 'campfire-action-face)))
       (if self? (campfire-delete-last-indicator))
-      (unless (or old self?) (run-hook-with-args
-                                     'campfire-message-received-hook
-                                     name
-                                     body
-                                     message))
+      (unless (or old self? (null name)) (run-hook-with-args
+                                          'campfire-message-received-hook
+                                          name
+                                          body
+                                          message))
       (run-hook-with-args 'campfire-transcript-updated))))
 
 (defun campfire-delete-last-indicator ()
