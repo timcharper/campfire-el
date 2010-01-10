@@ -44,6 +44,14 @@
 (defvar campfire-timezoneoffset -7 "time zone. I couldn't figure out how to extract this from Emacs, so I had to hardcode it for now.")
 (defvar campfire-last-user-text nil)
 
+(defvar campfire-message-received-hook nil
+  "Hook called whenever there is a new message.
+Listeners should receive args (name body message). Name and body are strings, and message is an alist with the rest of the details just in case you want them.
+
+Called with the campfire room bufer, so variables such as campfire-room-name are available. ")
+
+(defvar campfire-transcript-updated nil "Hook called whenever the transcript is updated")
+
 (defgroup campfire-faces nil "Faces for campfire-mode"
   :group 'campfire-faces)
 
@@ -351,7 +359,7 @@ Connection: close\n\n"
 (defun campfire-display-transcript ()
   (let ((response (campfire-url-retrieve-synchronously (campfire-api-url "room/%s/transcript.json" campfire-room-id))))
     (map 'list
-     (lambda (message) (campfire-display-message message))
+     (lambda (message) (campfire-display-message message t))
      (alist-value 'messages response))))
 
 (defun campfire-speak-reponse-received (response)
@@ -436,7 +444,7 @@ Connection: close\n\n"
     (switch-to-buffer pasted-buffer)
     (insert message-body)))
 
-(defun campfire-display-message (message)
+(defun campfire-display-message (message &optional old)
   (save-excursion
     (goto-char (overlay-end campfire-transcript-overlay))
     (let* ((type (alist-value 'type message))
@@ -499,7 +507,13 @@ Connection: close\n\n"
             (t
              (campfire-insert-user-cell "" 'campfire-user-face)
              (campfire-insert-message-cell (format "%s" message) 'campfire-action-face)))
-      (if self? (campfire-delete-last-indicator)))))
+      (if self? (campfire-delete-last-indicator))
+      (unless (or old self?) (run-hook-with-args
+                                     'campfire-message-received-hook
+                                     name
+                                     body
+                                     message))
+      (run-hook-with-args 'campfire-transcript-updated))))
 
 (defun campfire-delete-last-indicator ()
   "run from within the chat room. Delete the last indicator."
