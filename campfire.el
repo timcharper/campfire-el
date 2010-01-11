@@ -304,7 +304,7 @@ Connection: close\n\n"
     (campfire-check-heartbeat (current-buffer))))
 
 (defun campfire-check-heartbeat (buffer)
-  (if (buffer-live-p buffer)
+  (if (and campfire-last-heartbeat (buffer-live-p buffer))
       (with-current-buffer buffer
         (if (> (- (time-to-seconds (current-time)) (time-to-seconds campfire-last-heartbeat)) 20)
             (message (format "Connection lost in %s!" campfire-room-name))
