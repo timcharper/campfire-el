@@ -212,7 +212,7 @@ Called with the campfire room bufer, so variables such as campfire-room-name are
 (defun campfire-refresh-room-details ()
   "load room details"
   (setq campfire-room-details (campfire-fetch-room-details campfire-room-id))
-  (setq campfire-users (cdr (assoc 'users campfire-room-details))))
+  (setq campfire-users (append (cdr (assoc 'users campfire-room-details)) nil)))
 
 (defun campfire-speak-string (string kind)
   "Speak a message into the current room"
@@ -385,8 +385,9 @@ Connection: close\n\n"
   (or
    (find-if (lambda (user) (= (cdr (assoc 'id user)) id)) campfire-users)
    (and (not no-reload-users-on-miss)
-        (campfire-refresh-room-details)
-        (campfire-find-user-by-id id))))
+        (let ((fetched-user (alist-value 'user (campfire-url-retrieve-synchronously (campfire-api-url "/users/%s.json" id)))))
+          (if fetched-user (setq campfire-users (cons fetched-user campfire-users)))
+          fetched-user))))
 
 (defun campfire-user-get-name (user)
   (alist-value 'name user))
