@@ -37,7 +37,7 @@
 
 
 (defvar campfire-domain nil "The domain to connect to")
-(defvar campfire-use-ssl nil "Use SSL")
+(defvar campfire-ssl nil "Use SSL")
 (defvar campfire-token nil "Your campfire token (check your profile settings to find it)")
 (defvar campfire-debug nil "enable debug mode (leave tons of buffers and other garbage around)")
 
@@ -123,7 +123,7 @@ Called with the campfire room bufer, so variables such as campfire-room-name are
 
 
 (defun campfire-api-url (&optional format-string &rest args)
-  (let ((base (concat (if campfire-use-ssl "https://" "http://") campfire-domain (if campfire-use-ssl ":443" ":80"))))
+  (let ((base (concat (if campfire-ssl "https://" "http://") campfire-domain (if campfire-ssl ":443" ":80"))))
     (cond (format-string (concat base "/" (apply 'format format-string args)))
           (t base))))
 
@@ -277,7 +277,7 @@ Called with the campfire room bufer, so variables such as campfire-room-name are
     (setq campfire-streaming-buffer
           (get-buffer-create (concat " *campfire-" campfire-room-name "-stream*")))
     (setq campfire-stream
-          ;; (if campfire-use-ssl
+          ;; (if campfire-ssl
           ;;     (open-ssl-stream  (concat "stream-" campfire-room-name) campfire-streaming-buffer campfire-streaming-domain 443))
           (open-network-stream (concat "stream-" campfire-room-name) campfire-streaming-buffer campfire-streaming-domain 80))
     (let ((room-buffer (current-buffer))
