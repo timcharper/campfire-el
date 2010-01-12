@@ -35,13 +35,37 @@
 (require 'json)
 (require 'button)
 
+(defgroup campfire nil "campfire client for Emacs"
+  :group 'applications)
 
-(defvar campfire-domain nil "The domain to connect to")
-(defvar campfire-ssl nil "Use SSL")
-(defvar campfire-token nil "Your campfire token (check your profile settings to find it)")
-(defvar campfire-debug nil "enable debug mode (leave tons of buffers and other garbage around)")
+(defvar campfire-domains nil
+  "An alist of domains that you can connect to. If set, you will be prompted for a domain when you try to to connect.
 
-(defvar campfire-timezoneoffset -7 "time zone. I couldn't figure out how to extract this from Emacs, so I had to hardcode it for now.")
+Variable should look like this:
+
+(setq campfire-domains
+      \'(((domain . \"my-domain.campfirenow.com\")
+         (token . \"your-token-here\")
+         (ssl . nil))
+        ((domain . \"my-other-domain.campfirenow.com\")
+         (token . \"your-other-token-here\")
+         (ssl . t))))")
+
+(defcustom campfire-domain nil "The domain to connect to"
+  :group 'campfire
+  :type 'string)
+(defcustom campfire-ssl nil "Use SSL"
+  :group 'campfire
+  :type 'string)
+(defcustom campfire-token nil "Your campfire token (check your profile settings to find it)"
+  :group 'campfire
+  :type 'string)
+(defcustom campfire-debug nil "enable debug mode (leave tons of buffers and other garbage around)"
+  :group 'campfire
+  :type 'boolean)
+
+(defcustom campfire-timezoneoffset -7 "time zone. I couldn't figure out how to extract this from Emacs, so I had to hardcode it for now." :group 'campfire)
+
 (defvar campfire-last-user-text nil)
 
 (defvar campfire-message-received-hook nil
@@ -54,8 +78,9 @@ Called with the campfire room bufer, so variables such as campfire-room-name are
 
 (defvar campfire-user-cell-width 20 "the width of the user cell")
 (defvar campfire-last-heartbeat nil "last time we saw a message (event be it the scondly ping) from campfire.")
+
 (defgroup campfire-faces nil "Faces for campfire-mode"
-  :group 'campfire-faces)
+  :group 'campfire)
 
 (defface campfire-message-face
   '((t ()))
@@ -163,15 +188,16 @@ Called with the campfire room bufer, so variables such as campfire-room-name are
 (defun campfire ()
   "connect to campfire"
   (interactive)
-  (let ((domain (campfire-select-domain)))
-    (setq campfire-domain (alist-value 'domain domain)
-          campfire-ssl (alist-value 'ssl domain)
-          campfire-token (alist-value 'token domain)
-          campfire-rooms (fetch-campfire-rooms)
-          campfire-room-name (campfire-completing-read "Campfire room: " (campfire-room-names campfire-rooms) nil t)
-          campfire-room-id (campfire-room-id-for-name campfire-rooms campfire-room-name))
+  (if campfire-domains
+      (let ((domain (campfire-select-domain)))
+        (setq campfire-domain (alist-value 'domain domain)
+              campfire-ssl (alist-value 'ssl domain)
+              campfire-token (alist-value 'token domain)
+              campfire-rooms (fetch-campfire-rooms)
+              campfire-room-name (campfire-completing-read "Campfire room: " (campfire-room-names campfire-rooms) nil t)
+              campfire-room-id (campfire-room-id-for-name campfire-rooms campfire-room-name))))
 
-    (campfire-join)))
+  (campfire-join))
 
 (defun campfire-join ()
   (let ((buf (get-buffer-create (concat "*Campfire: " campfire-room-name "*"))))
