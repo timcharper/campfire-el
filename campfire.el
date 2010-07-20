@@ -533,7 +533,7 @@ Connection: close\n\n"
 
             ((equal type "EnterMessage")
              (campfire-insert-user-cell name 'campfire-action-face)
-             (campfire-insert-message-cell "has a entered the room" 'campfire-action-face))
+             (campfire-insert-message-cell "has entered the room" 'campfire-action-face))
              
             ((equal type "UploadMessage")
              (campfire-insert-user-cell name 'campfire-action-face)
