@@ -333,7 +333,9 @@ Connection: close\n\n"
   (if (and campfire-last-heartbeat (buffer-live-p buffer))
       (with-current-buffer buffer
         (if (> (- (time-to-seconds (current-time)) (time-to-seconds campfire-last-heartbeat)) 20)
-            (message (format "Connection lost in %s!" campfire-room-name))
+            (progn
+              (message (format "Connection lost in %s!" campfire-room-name))
+              (campfire-display-message '((id) (user_id) (body . "Connection lost") (type . "SystemMessage"))))
           (run-at-time "20 seconds" nil `(lambda () (campfire-check-heartbeat ,(current-buffer))))))))
 
 (defun campfire-stream-terminate ()
