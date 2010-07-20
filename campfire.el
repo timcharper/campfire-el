@@ -74,7 +74,7 @@ Listeners should receive args (name body message). Name and body are strings, an
 
 Called with the campfire room bufer, so variables such as campfire-room-name are available. ")
 
-(defvar campfire-transcript-updated nil "Hook called whenever the transcript is updated")
+(defvar campfire-transcript-updated-hook nil "Hook called whenever the transcript is updated")
 
 (defvar campfire-user-cell-width 20 "the width of the user cell")
 (defvar campfire-last-heartbeat nil "last time we saw a message (event be it the scondly ping) from campfire.")
@@ -405,7 +405,7 @@ Connection: close\n\n"
   (save-excursion
     (goto-char (overlay-end campfire-transcript-overlay))
     (insert "...\n")
-    (run-hook-with-args 'campfire-transcript-updated)))
+    (run-hook-with-args 'campfire-transcript-updated-hook)))
 
 (defun campfire-find-user-by-id (id &rest no-reload-users-on-miss)
   (or
@@ -544,16 +544,19 @@ Connection: close\n\n"
                                             (campfire-api-url "room/%s"
                                                               campfire-room-id))
                                            'campfire-action-face))
+            ((equal type "SystemMessage")
+             (campfire-insert-user-cell "System" 'campfire-action-face)
+             (campfire-insert-message-cell body 'campfire-action-face))
             (t
              (campfire-insert-user-cell "" 'campfire-user-face)
              (campfire-insert-message-cell (format "%s" message) 'campfire-action-face)))
-      (if self? (campfire-delete-last-indicator))
+      (campfire-delete-last-indicator)
       (unless (or old self? (null name)) (run-hook-with-args
                                           'campfire-message-received-hook
                                           name
                                           body
                                           message))
-      (run-hook-with-args 'campfire-transcript-updated))))
+      (run-hook-with-args 'campfire-transcript-updated-hook))))
 
 (defun campfire-delete-last-indicator ()
   "run from within the chat room. Delete the last indicator."
@@ -592,5 +595,7 @@ Connection: close\n\n"
 (defun campfire-check-error (response)
   nil)
 
+(if (functionp 'goto-address)
+    (add-hook 'campfire-transcript-updated-hook 'goto-address))
 (provide 'campfire)
 ;; (setq stack-trace-on-error nil)
