@@ -142,9 +142,7 @@ Called with the campfire room bufer, so variables such as campfire-room-name are
                 nil)
             (signal 'campfire-error
                     (list (format "Response code %d"
-                                  url-http-response-status))))))
-    (unless campfire-debug
-      (kill-buffer buffer))))
+                                  url-http-response-status))))))))
 
 
 (defun campfire-api-url (&optional format-string &rest args)
@@ -406,6 +404,7 @@ Connection: close\n\n"
   (setq campfire-my-user-id (cdr (assoc 'user_id (cdr (assoc 'message response)))))
   (save-excursion
     (goto-char (overlay-end campfire-transcript-overlay))
+    (campfire-delete-last-indicator)
     (insert "...\n")
     (run-hook-with-args 'campfire-transcript-updated-hook)))
 
