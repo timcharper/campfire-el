@@ -43,7 +43,7 @@
 
 Variable should look like this:
 
-(setq campfire-domains
+(defvar campfire-domains
       \'(((domain . \"my-domain.campfirenow.com\")
          (token . \"your-token-here\")
          (ssl . nil))
